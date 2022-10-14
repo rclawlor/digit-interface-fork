@@ -194,6 +194,65 @@ class Digit(DigitDefaults):
             if cv2.waitKey(1) == 27:
                 break
         cv2.destroyAllWindows()
+    
+    def show_diff_view(self) -> None:
+        """
+        Creates OpenCV named window with frame difference view of DIGIT device, ESC to close window
+        :return: None
+        """
+        preframe = self.get_frame()
+        while True:
+            frame = self.get_frame()
+            diff = frame - preframe
+
+            b, g, r = cv2.split(diff)
+            B = cv2.cvtColor(b, cv2.COLOR_GRAY2BGR)
+            B = ((255+B) / 2).astype('uint8')
+            G = cv2.cvtColor(g, cv2.COLOR_GRAY2BGR)
+            G = ((255+G) / 2).astype('uint8')
+            R = cv2.cvtColor(r, cv2.COLOR_GRAY2BGR)
+            R = ((255+R) / 2).astype('uint8')
+
+            RGB_diff = np.concatenate([R,G,B], axis=1)
+
+            cv2.imshow(f"Digit View {self.serial}", RGB_diff)
+            preframe = frame
+            if cv2.waitKey(1) == 27:
+                break
+        cv2.destroyAllWindows()
+    
+    def show_event_view(self, threshold=1) -> None:
+        """
+        Creates OpenCV named window with event-based view of DIGIT device, ESC to close window
+        :param threashold: Specify threshold at which event is generated
+        :return: None
+        """
+        preframe = self.get_frame()
+        n = 0
+        while True:
+            event = np.zeros((preframe.shape[0], preframe.shape[1]))
+            frame = self.get_frame()
+            intensity = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+            preintensity = cv2.cvtColor(preframe, cv2.COLOR_RGB2GRAY)
+            diff = intensity.astype('float32') - preintensity.astype('float32')
+            diff_abs = np.abs(diff)
+
+            indice = np.nonzero(diff_abs > threshold)
+
+            for i in range(len(indice[0])):
+                    event[indice[0][i]][indice[1][i]] = diff[indice[0][i]][indice[1][i]]
+
+            event = (event+255) / 2
+            event = event.astype('uint8')
+
+            cv2.imshow(f"Digit View {self.serial}", cv2.cvtColor(event, cv2.COLOR_GRAY2BGR))
+            preframe = frame
+                
+            event.fill(0)
+
+            if cv2.waitKey(1) == 27:
+                break
+        cv2.destroyAllWindows()
 
     def disconnect(self) -> None:
         logger.debug(f"{self.serial}:Closing DIGIT device")
