@@ -228,22 +228,25 @@ class Digit(DigitDefaults):
         :return: None
         """
         preframe = self.get_frame()
+        event_intensity = cv2.cvtColor(preframe, cv2.COLOR_RGB2GRAY)
 
         while True:
             # initialise empty array to fill with events
             event = np.zeros((preframe.shape[0], preframe.shape[1]))
             frame = self.get_frame()
             intensity = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
-            preintensity = cv2.cvtColor(preframe, cv2.COLOR_RGB2GRAY)
-            diff = np.log(intensity).astype('float32') - np.log(preintensity).astype('float32')
+
+            diff = np.log(intensity).astype('float32') - np.log(event_intensity).astype('float32')
 
             event_positive = np.nonzero(diff > threshold)
             event_negative = np.nonzero(diff < -threshold)
 
             for i in range(len(event_positive[0])):
+                    event_intensity[event_positive[0][i]][event_positive[1][i]] = intensity[event_positive[0][i]][event_positive[1][i]]
                     event[event_positive[0][i]][event_positive[1][i]] = 255
 
             for i in range(len(event_negative[0])):        
+                    event_intensity[event_negative[0][i]][event_negative[1][i]] = intensity[event_negative[0][i]][event_negative[1][i]]
                     event[event_negative[0][i]][event_negative[1][i]] = 200
 
             eventBGR = cv2.cvtColor(event.astype('uint8'), cv2.COLOR_GRAY2BGR)
