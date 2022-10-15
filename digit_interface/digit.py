@@ -224,28 +224,32 @@ class Digit(DigitDefaults):
     def show_event_view(self, threshold=1) -> None:
         """
         Creates OpenCV named window with event-based view of DIGIT device, ESC to close window
-        :param threashold: Specify threshold at which event is generated
+        :param threashold: Specify log threshold at which event is generated
         :return: None
         """
         preframe = self.get_frame()
-        n = 0
+
         while True:
+            # initialise empty array to fill with events
             event = np.zeros((preframe.shape[0], preframe.shape[1]))
             frame = self.get_frame()
             intensity = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
             preintensity = cv2.cvtColor(preframe, cv2.COLOR_RGB2GRAY)
-            diff = intensity.astype('float32') - preintensity.astype('float32')
-            diff_abs = np.abs(diff)
+            diff = np.log(intensity).astype('float32') - np.log(preintensity).astype('float32')
 
-            indice = np.nonzero(diff_abs > threshold)
+            event_positive = np.nonzero(diff > threshold)
+            event_negative = np.nonzero(diff < -threshold)
 
-            for i in range(len(indice[0])):
-                    event[indice[0][i]][indice[1][i]] = diff[indice[0][i]][indice[1][i]]
+            for i in range(len(event_positive[0])):
+                    event[event_positive[0][i]][event_positive[1][i]] = 255
 
-            event = (event+255) / 2
-            event = event.astype('uint8')
+            for i in range(len(event_negative[0])):        
+                    event[event_negative[0][i]][event_negative[1][i]] = 200
 
-            cv2.imshow(f"Digit View {self.serial}", cv2.cvtColor(event, cv2.COLOR_GRAY2BGR))
+            eventBGR = cv2.cvtColor(event.astype('uint8'), cv2.COLOR_GRAY2BGR)
+            eventBGR = cv2.applyColorMap(eventBGR, 5)
+
+            cv2.imshow(f"Digit View {self.serial}", eventBGR)
             preframe = frame
                 
             event.fill(0)
